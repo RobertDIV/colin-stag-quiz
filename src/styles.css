@@ -102,6 +102,20 @@ p {
   color: var(--danger);
   border-color: var(--danger);
 }
+.btn.armed {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--white);
+}
+.notice {
+  width: 100%;
+  text-align: left;
+  background: var(--grey-2);
+  border: 1px solid var(--orange);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  cursor: pointer;
+}
 .btn-huge {
   min-height: 76px;
   font-size: 1.5rem;

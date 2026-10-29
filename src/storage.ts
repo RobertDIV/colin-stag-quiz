@@ -21,7 +21,13 @@ function write(key: string, value: unknown) {
   }
 }
 
-export const loadQuestions = () => read<Question[]>(QUESTIONS_KEY, [])
+/** Also flags examples loaded before the `example` field existed. */
+export const loadQuestions = () =>
+  read<Question[]>(QUESTIONS_KEY, []).map((q) =>
+    !q.example && EXAMPLE_QUESTIONS.some((e) => e.text === q.text && e.source === q.source)
+      ? { ...q, example: true as const }
+      : q,
+  )
 export const saveQuestions = (questions: Question[]) => write(QUESTIONS_KEY, questions)
 export const loadGame = () => read<Game | null>(GAME_KEY, null)
 export const saveGame = (game: Game | null) => write(GAME_KEY, game)
@@ -62,11 +68,12 @@ export function parseBackup(text: string): Question[] {
       text: q.text,
       answer,
       source: typeof q.source === 'string' && q.source.trim() ? q.source : undefined,
+      ...(q.example === true && { example: true as const }),
     }
   })
 }
 
-export const EXAMPLE_QUESTIONS: Omit<Question, 'id'>[] = [
+export const EXAMPLE_QUESTIONS: Omit<Question, 'id' | 'example'>[] = [
   { text: 'Mate your calves at five-a-side last night were unreal 🔥', answer: 'colin', source: 'Example: sent to Jim' },
   { text: 'Those arms should be illegal', answer: 'porn', source: 'Example: comment on a fireman thirst trap video' },
   { text: "Honestly you're looking so good since you started the gym", answer: 'colin', source: 'Example: sent to Dave' },

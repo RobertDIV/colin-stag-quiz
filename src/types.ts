@@ -11,6 +11,8 @@ export interface Question {
   answer: Answer
   /** Revealed after the guess, e.g. "Sent to Jim" or "Found on a fireman thirst trap video". */
   source?: string
+  /** Loaded from the built-in examples, so it can be cleared in one go. */
+  example?: true
 }
 
 /** A game snapshots its questions so editing mid-game can't break it. */

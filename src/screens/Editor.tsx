@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import ConfirmButton from '../ConfirmButton'
 import { EXAMPLE_QUESTIONS, exportBackup, newId, parseBackup } from '../storage'
 import { ANSWER_LABEL, type Answer, type Question } from '../types'
 
@@ -22,11 +23,13 @@ const EMPTY_DRAFT: Draft = { id: null, text: '', answer: null, source: '' }
 export default function Editor({ questions, onChange, onBack }: Props) {
   const [draft, setDraft] = useState<Draft | null>(null)
   const [filter, setFilter] = useState<Filter>('all')
+  const [notice, setNotice] = useState<string | null>(null)
   const importMode = useRef<'add' | 'replace'>('add')
   const fileInput = useRef<HTMLInputElement>(null)
 
   const shown = filter === 'all' ? questions : questions.filter((q) => q.answer === filter)
   const colinCount = questions.filter((q) => q.answer === 'colin').length
+  const exampleCount = questions.filter((q) => q.example).length
 
   function save() {
     if (!draft || !draft.text.trim() || !draft.answer) return
@@ -36,14 +39,25 @@ export default function Editor({ questions, onChange, onBack }: Props) {
       answer: draft.answer,
       source: draft.source.trim() || undefined,
     }
+    const existing = questions.find((x) => x.id === draft.id)
+    if (existing?.example) q.example = true
     onChange(draft.id ? questions.map((x) => (x.id === q.id ? q : x)) : [q, ...questions])
     setDraft(null)
   }
 
   function remove() {
-    if (!draft?.id || !confirm('Delete this question?')) return
+    if (!draft?.id) return
     onChange(questions.filter((q) => q.id !== draft.id))
     setDraft(null)
+  }
+
+  function loadExamples() {
+    onChange([...questions, ...EXAMPLE_QUESTIONS.map((q) => ({ ...q, id: newId(), example: true as const }))])
+  }
+
+  function clearExamples() {
+    onChange(questions.filter((q) => !q.example))
+    setNotice(`Removed ${exampleCount} example ${exampleCount === 1 ? 'question' : 'questions'}.`)
   }
 
   function pickImport(mode: 'add' | 'replace') {
@@ -58,16 +72,16 @@ export default function Editor({ questions, onChange, onBack }: Props) {
     try {
       const imported = parseBackup(await file.text())
       if (importMode.current === 'replace') {
-        if (!confirm(`Replace all ${questions.length} questions with the ${imported.length} in this file?`)) return
         onChange(imported)
+        setNotice(`Replaced everything with the ${imported.length} questions from the file.`)
       } else {
         const known = new Set(questions.map((q) => q.id))
         const fresh = imported.filter((q) => !known.has(q.id))
         onChange([...questions, ...fresh])
-        alert(`Added ${fresh.length} new questions${fresh.length < imported.length ? ` (${imported.length - fresh.length} already here)` : ''}.`)
+        setNotice(`Added ${fresh.length} new questions${fresh.length < imported.length ? ` (${imported.length - fresh.length} already here)` : ''}.`)
       }
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Could not read that file.')
+      setNotice(err instanceof Error ? err.message : 'Could not read that file.')
     }
   }
 
@@ -123,9 +137,7 @@ export default function Editor({ questions, onChange, onBack }: Props) {
             Save
           </button>
           {draft.id && (
-            <button className="btn btn-danger" onClick={remove}>
-              Delete
-            </button>
+            <ConfirmButton className="btn btn-danger" label="Delete" confirmLabel="Tap again to delete" onConfirm={remove} />
           )}
         </div>
       </main>
@@ -146,6 +158,12 @@ export default function Editor({ questions, onChange, onBack }: Props) {
         + Add question
       </button>
 
+      {notice && (
+        <button className="notice" onClick={() => setNotice(null)}>
+          {notice} <span className="muted">✕</span>
+        </button>
+      )}
+
       <div className="tabs" role="tablist">
         {(['all', 'colin', 'porn'] as Filter[]).map((f) => (
           <button key={f} role="tab" aria-selected={filter === f} className={filter === f ? 'tab active' : 'tab'} onClick={() => setFilter(f)}>
@@ -157,10 +175,7 @@ export default function Editor({ questions, onChange, onBack }: Props) {
       {questions.length === 0 ? (
         <div className="empty">
           <p className="muted">No questions yet.</p>
-          <button
-            className="btn btn-secondary"
-            onClick={() => onChange(EXAMPLE_QUESTIONS.map((q) => ({ ...q, id: newId() })))}
-          >
+          <button className="btn btn-secondary" onClick={loadExamples}>
             Load examples to try it out
           </button>
         </div>
@@ -188,9 +203,20 @@ export default function Editor({ questions, onChange, onBack }: Props) {
           <button className="btn btn-secondary" onClick={() => pickImport('add')}>
             Import and add
           </button>
-          <button className="btn btn-secondary" onClick={() => pickImport('replace')}>
-            Import and replace all
-          </button>
+          <ConfirmButton
+            className="btn btn-secondary"
+            label="Import and replace all"
+            confirmLabel={`Tap again: replaces all ${questions.length}`}
+            onConfirm={() => pickImport('replace')}
+          />
+          {exampleCount > 0 && (
+            <ConfirmButton
+              className="btn btn-danger"
+              label={`Clear ${exampleCount} example ${exampleCount === 1 ? 'question' : 'questions'}`}
+              confirmLabel="Tap again to clear examples"
+              onConfirm={clearExamples}
+            />
+          )}
         </div>
         <input ref={fileInput} type="file" accept="application/json,.json" hidden onChange={onImportFile} />
       </section>

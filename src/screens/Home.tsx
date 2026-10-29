@@ -1,3 +1,4 @@
+import ConfirmButton from '../ConfirmButton'
 import { getMix, isFinished } from '../game'
 import type { Game, Question } from '../types'
 
@@ -13,11 +14,6 @@ export default function Home({ questions, game, onStart, onResume, onEdit }: Pro
   const mix = getMix(questions)
   const inProgress = game && !isFinished(game)
   const spare = mix.porn - mix.pornUsed
-
-  function start() {
-    if (inProgress && !confirm('Abandon the game in progress and start a new one?')) return
-    onStart()
-  }
 
   return (
     <main className="screen home">
@@ -56,9 +52,19 @@ export default function Home({ questions, game, onStart, onResume, onEdit }: Pro
             Resume game ({game.index + 1}/{game.questions.length})
           </button>
         )}
-        <button className={inProgress ? 'btn btn-secondary' : 'btn btn-primary'} onClick={start} disabled={!mix.canPlay}>
-          {inProgress ? 'New game' : 'Start game'}
-        </button>
+        {inProgress ? (
+          <ConfirmButton
+            className="btn btn-secondary"
+            label="New game"
+            confirmLabel="Tap again to abandon this game"
+            onConfirm={onStart}
+            disabled={!mix.canPlay}
+          />
+        ) : (
+          <button className="btn btn-primary" onClick={onStart} disabled={!mix.canPlay}>
+            Start game
+          </button>
+        )}
         <button className="btn btn-secondary" onClick={onEdit}>
           Edit questions
         </button>
