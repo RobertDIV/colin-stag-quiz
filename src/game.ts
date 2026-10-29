@@ -1,4 +1,4 @@
-import type { Game, Question } from './types'
+import type { Game, Question, Settings } from './types'
 
 export function shuffle<T>(items: T[]): T[] {
   const out = [...items]
@@ -27,15 +27,24 @@ export function getMix(questions: Question[]): Mix {
   return { colin, porn, pornUsed: Math.min(colin, porn), canPlay: colin > 0 && porn > 0 }
 }
 
-export function newGame(questions: Question[]): Game {
+export function newGame(questions: Question[], settings: Settings): Game {
   const colin = questions.filter((q) => q.answer === 'colin')
   const porn = shuffle(questions.filter((q) => q.answer === 'porn')).slice(0, colin.length)
   const picked = shuffle([...colin, ...porn])
-  return { questions: picked, guesses: picked.map(() => null), index: 0 }
+  const players = settings.mode === 'party' ? settings.players : ['Colin']
+  return {
+    mode: settings.mode,
+    players,
+    questions: picked,
+    guesses: picked.map(() => players.map(() => null)),
+    revealed: picked.map(() => false),
+    index: 0,
+  }
 }
 
-export function score(game: Game): number {
-  return game.guesses.filter((g, i) => g === game.questions[i].answer).length
+/** Correct answers per player, in player order. */
+export function scores(game: Game): number[] {
+  return game.players.map((_, p) => game.guesses.filter((g, i) => g[p] === game.questions[i].answer).length)
 }
 
 export function isFinished(game: Game): boolean {

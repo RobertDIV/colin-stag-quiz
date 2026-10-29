@@ -1,19 +1,42 @@
+import { useState } from 'react'
 import ConfirmButton from '../ConfirmButton'
 import { getMix, isFinished } from '../game'
-import type { Game, Question } from '../types'
+import type { Game, Mode, Question, Settings } from '../types'
 
 interface Props {
   questions: Question[]
+  settings: Settings
+  onSettingsChange: (settings: Settings) => void
   game: Game | null
   onStart: () => void
   onResume: () => void
   onEdit: () => void
 }
 
-export default function Home({ questions, game, onStart, onResume, onEdit }: Props) {
+const MODE_LABEL: Record<Mode, string> = { classic: 'Colin guesses', party: 'Party mode' }
+
+export default function Home({ questions, settings, onSettingsChange, game, onStart, onResume, onEdit }: Props) {
+  const [name, setName] = useState('')
   const mix = getMix(questions)
   const inProgress = game && !isFinished(game)
   const spare = mix.porn - mix.pornUsed
+  const party = settings.mode === 'party'
+  const needsPlayers = party && settings.players.length === 0
+  const canStart = mix.canPlay && !needsPlayers
+
+  const trimmed = name.trim()
+  const duplicate = settings.players.some((p) => p.toLowerCase() === trimmed.toLowerCase())
+
+  function addPlayer(e: React.FormEvent) {
+    e.preventDefault()
+    if (!trimmed || duplicate) return
+    onSettingsChange({ ...settings, players: [...settings.players, trimmed] })
+    setName('')
+  }
+
+  function removePlayer(player: string) {
+    onSettingsChange({ ...settings, players: settings.players.filter((p) => p !== player) })
+  }
 
   return (
     <main className="screen home">
@@ -21,8 +44,51 @@ export default function Home({ questions, game, onStart, onResume, onEdit }: Pro
         <h1>
           Colin <span className="or">or</span> <span className="tag">Gay Porn</span>?
         </h1>
-        <p className="muted">Read the message out. Colin guesses. No cheating.</p>
+        <p className="muted">
+          {party ? 'Read the message out. Everyone guesses.' : 'Read the message out. Colin guesses. No cheating.'}
+        </p>
       </header>
+
+      <div className="tabs tabs-2" role="tablist">
+        {(['classic', 'party'] as Mode[]).map((m) => (
+          <button
+            key={m}
+            role="tab"
+            aria-selected={settings.mode === m}
+            className={settings.mode === m ? 'tab active' : 'tab'}
+            onClick={() => onSettingsChange({ ...settings, mode: m })}
+          >
+            {MODE_LABEL[m]}
+          </button>
+        ))}
+      </div>
+
+      {party && (
+        <section className="panel">
+          <h3 className="panel-title">Players</h3>
+          {settings.players.length > 0 ? (
+            <ul className="chips">
+              {settings.players.map((p) => (
+                <li key={p} className="chip">
+                  {p}
+                  <button aria-label={`Remove ${p}`} onClick={() => removePlayer(p)}>
+                    ✕
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="muted small">Add everyone who's guessing, Colin included if he's playing.</p>
+          )}
+          <form className="add-player" onSubmit={addPlayer}>
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Player name" maxLength={20} />
+            <button className="btn btn-primary" disabled={!trimmed || duplicate}>
+              Add
+            </button>
+          </form>
+          {duplicate && trimmed && <p className="small muted">{trimmed} is already playing.</p>}
+        </section>
+      )}
 
       <section className="panel">
         <div className="counts">
@@ -49,27 +115,28 @@ export default function Home({ questions, game, onStart, onResume, onEdit }: Pro
       <div className="actions">
         {inProgress && (
           <button className="btn btn-primary" onClick={onResume}>
-            Resume game ({game.index + 1}/{game.questions.length})
+            Resume {game.mode === 'party' ? 'party game' : 'game'} ({game.index + 1}/{game.questions.length})
           </button>
         )}
         {inProgress ? (
           <ConfirmButton
             className="btn btn-secondary"
-            label="New game"
+            label={`New ${party ? 'party ' : ''}game`}
             confirmLabel="Tap again to abandon this game"
             onConfirm={onStart}
-            disabled={!mix.canPlay}
+            disabled={!canStart}
           />
         ) : (
-          <button className="btn btn-primary" onClick={onStart} disabled={!mix.canPlay}>
-            Start game
+          <button className="btn btn-primary" onClick={onStart} disabled={!canStart}>
+            Start {party ? 'party ' : ''}game
           </button>
         )}
         <button className="btn btn-secondary" onClick={onEdit}>
           Edit questions
         </button>
       </div>
-      {inProgress && <p className="muted small center">Edits apply from the next new game.</p>}
+      {needsPlayers && <p className="muted small center">Add at least one player to start a party game.</p>}
+      {inProgress && <p className="muted small center">Edits and player changes apply from the next new game.</p>}
     </main>
   )
 }

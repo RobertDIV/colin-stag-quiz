@@ -15,10 +15,21 @@ export interface Question {
   example?: true
 }
 
-/** A game snapshots its questions so editing mid-game can't break it. */
+/** classic: Colin guesses alone. party: every player guesses each message. */
+export type Mode = 'classic' | 'party'
+
+export interface Settings {
+  mode: Mode
+  players: string[]
+}
+
+/** A game snapshots its questions and players so editing mid-game can't break it. */
 export interface Game {
+  mode: Mode
+  players: string[]
   questions: Question[]
-  /** Colin's guess for each question, null until answered. */
-  guesses: (Answer | null)[]
+  /** guesses[question][player], null until chosen. */
+  guesses: (Answer | null)[][]
+  revealed: boolean[]
   index: number
 }

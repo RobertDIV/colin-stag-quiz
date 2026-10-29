@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { isFinished, newGame } from './game'
-import { loadGame, loadQuestions, saveGame, saveQuestions } from './storage'
-import type { Game, Question } from './types'
+import { loadGame, loadQuestions, loadSettings, saveGame, saveQuestions, saveSettings } from './storage'
+import type { Game, Question, Settings } from './types'
 import Home from './screens/Home'
 import Editor from './screens/Editor'
 import Play from './screens/Play'
@@ -11,10 +11,12 @@ type Screen = 'home' | 'editor' | 'play'
 
 export default function App() {
   const [questions, setQuestions] = useState<Question[]>(loadQuestions)
+  const [settings, setSettings] = useState<Settings>(loadSettings)
   const [game, setGame] = useState<Game | null>(loadGame)
   const [screen, setScreen] = useState<Screen>('home')
 
   useEffect(() => saveQuestions(questions), [questions])
+  useEffect(() => saveSettings(settings), [settings])
   useEffect(() => saveGame(game), [game])
 
   // Android's back button returns to the home screen rather than closing the app.
@@ -31,7 +33,7 @@ export default function App() {
   }
 
   function startGame() {
-    setGame(newGame(questions))
+    setGame(newGame(questions, settings))
     go('play')
   }
 
@@ -48,6 +50,8 @@ export default function App() {
   return (
     <Home
       questions={questions}
+      settings={settings}
+      onSettingsChange={setSettings}
       game={game}
       onStart={startGame}
       onResume={() => go('play')}

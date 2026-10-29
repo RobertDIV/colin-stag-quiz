@@ -1,7 +1,8 @@
-import type { Answer, Game, Question } from './types'
+import type { Answer, Game, Question, Settings } from './types'
 
 const QUESTIONS_KEY = 'csq.questions.v1'
 const GAME_KEY = 'csq.game.v1'
+const SETTINGS_KEY = 'csq.settings.v1'
 
 function read<T>(key: string, fallback: T): T {
   try {
@@ -29,8 +30,17 @@ export const loadQuestions = () =>
       : q,
   )
 export const saveQuestions = (questions: Question[]) => write(QUESTIONS_KEY, questions)
-export const loadGame = () => read<Game | null>(GAME_KEY, null)
 export const saveGame = (game: Game | null) => write(GAME_KEY, game)
+export const loadSettings = () => read<Settings>(SETTINGS_KEY, { mode: 'classic', players: [] })
+export const saveSettings = (settings: Settings) => write(SETTINGS_KEY, settings)
+
+/** Games saved before party mode stored one guess per question; convert them. */
+export function loadGame(): Game | null {
+  const game = read<(Game & { guesses: unknown[] }) | null>(GAME_KEY, null)
+  if (!game || game.players) return game
+  const old = game.guesses as (Answer | null)[]
+  return { ...game, mode: 'classic', players: ['Colin'], guesses: old.map((g) => [g]), revealed: old.map((g) => g !== null) }
+}
 
 /** Asks the browser not to evict our data when the phone is low on space. */
 export function requestPersistence() {
