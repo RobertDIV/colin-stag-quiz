@@ -168,26 +168,19 @@ p {
 .home-title .tag {
   color: var(--orange);
 }
-.counts {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  text-align: center;
-}
-.counts div {
-  background: var(--grey-2);
-  border-radius: 10px;
-  padding: 12px 8px;
+.total {
   display: flex;
-  flex-direction: column;
+  align-items: baseline;
+  justify-content: center;
+  gap: 10px;
 }
-.counts strong {
-  font-size: 2rem;
+.total strong {
+  font-size: 2.6rem;
   color: var(--orange);
 }
-.counts span {
+.total span {
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: 1.1rem;
 }
 .mix-note {
   font-size: 0.95rem;

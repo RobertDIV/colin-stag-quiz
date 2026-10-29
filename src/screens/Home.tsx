@@ -19,7 +19,6 @@ export default function Home({ questions, settings, onSettingsChange, game, onSt
   const [name, setName] = useState('')
   const mix = getMix(questions)
   const inProgress = game && !isFinished(game)
-  const spare = mix.porn - mix.pornUsed
   const party = settings.mode === 'party'
   const needsPlayers = party && settings.players.length === 0
   const canStart = mix.canPlay && !needsPlayers
@@ -90,23 +89,13 @@ export default function Home({ questions, settings, onSettingsChange, game, onSt
         </section>
       )}
 
+      {/* Only the total is shown here so players can't work out the Colin / Gay Porn split. */}
       <section className="panel">
-        <div className="counts">
-          <div>
-            <strong>{mix.colin}</strong>
-            <span>Colin</span>
-          </div>
-          <div>
-            <strong>{mix.porn}</strong>
-            <span>Gay Porn</span>
-          </div>
-        </div>
         {mix.canPlay ? (
-          <p className="mix-note">
-            Next game: <b>{mix.colin + mix.pornUsed} messages</b> ({mix.colin} Colin + {mix.pornUsed} Gay Porn).
-            {spare > 0 && ` ${spare} spare Gay Porn ${spare === 1 ? 'message sits' : 'messages sit'} out at random.`}
-            {mix.porn < mix.colin && ` Add ${mix.colin - mix.porn} more Gay Porn to even it up.`}
-          </p>
+          <div className="total">
+            <strong>{mix.colin + mix.pornUsed}</strong>
+            <span>questions</span>
+          </div>
         ) : (
           <p className="mix-note">Add at least one Colin message and one Gay Porn message to play.</p>
         )}

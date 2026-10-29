@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import ConfirmButton from '../ConfirmButton'
+import { getMix } from '../game'
 import { EXAMPLE_QUESTIONS, exportBackup, newId, parseBackup } from '../storage'
 import { ANSWER_LABEL, type Answer, type Question } from '../types'
 
@@ -30,6 +31,8 @@ export default function Editor({ questions, onChange, onBack }: Props) {
   const shown = filter === 'all' ? questions : questions.filter((q) => q.answer === filter)
   const colinCount = questions.filter((q) => q.answer === 'colin').length
   const exampleCount = questions.filter((q) => q.example).length
+  const mix = getMix(questions)
+  const spare = mix.porn - mix.pornUsed
 
   function save() {
     if (!draft || !draft.text.trim() || !draft.answer) return
@@ -171,6 +174,14 @@ export default function Editor({ questions, onChange, onBack }: Props) {
           </button>
         ))}
       </div>
+
+      {mix.canPlay && (
+        <p className="small muted">
+          Next game: {mix.colin + mix.pornUsed} questions ({mix.colin} Colin + {mix.pornUsed} Gay Porn).
+          {spare > 0 && ` ${spare} spare Gay Porn ${spare === 1 ? 'sits' : 'sit'} out at random.`}
+          {mix.porn < mix.colin && ` Add ${mix.colin - mix.porn} more Gay Porn to even it up.`}
+        </p>
+      )}
 
       {questions.length === 0 ? (
         <div className="empty">
